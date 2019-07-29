@@ -1,7 +1,7 @@
 ; (function () {
     var canvas = document.getElementById('bg');
     var width=400,//canvas宽
-        height=400,//canvas高
+        height=500,//canvas高
         tetrisBaseList=[],
         tetrisNum=1,//当前方块索引||方块总数
         tetrisWidth=50,//方块宽
@@ -21,9 +21,9 @@
     var xlength=width/tetrisWidth;
     var ylength=height/tetrisHeight;
     var data=[];
-    for(let i=0;i<xlength;i++){
+    for(let i=0;i<ylength;i++){
         data[i]=[];
-        for(let j=0;j<ylength;j++){
+        for(let j=0;j<xlength;j++){
             data[i].push(0)
         }
     }
@@ -54,7 +54,7 @@
             var ctx = canvas.getContext('2d');
             ctx.lineWidth=1;
             ctx.strokeStyle = '#769bc2';
-            ctx.strokeRect(0,0,400,400);
+            ctx.strokeRect(0,0,width,height);
             for(var i =0;i<12;i++){
                 for(var j =0;j<10;j++){
                     ctx.strokeStyle = 'rgba(78,144,156,0.5)';
@@ -96,7 +96,7 @@
                 //■
                 //■
                 //■
-                [[Xcrea+1,Ycrea-1],[Xcrea+1,Ycrea],[Xcrea+1,Ycrea+1],[Xcrea+1,Ycrea+2]],
+                [[Xcrea,Ycrea-1],[Xcrea,Ycrea],[Xcrea,Ycrea+1],[Xcrea,Ycrea+2]],
             ],
             [
                 //  ■■
@@ -201,17 +201,31 @@
         }
 
     }
-    //当前方块是否可以下落
-    function getNextState(tetris) {
-        let k=JSON.parse(JSON.stringify(tetris.random));
-        let y=parseInt(tetris.y/100)+1;
-        let c=baseTetris(tetris.x,tetris.y,tetris.rotate1Index,tetris.rotate2Index);
-        for(let i=0;i<4;i++){
-            k[i][1]+=y;
+    //当前方块是否可以进行下一步
+    function getNextState(tetris, direction) {
+        let tetris_x=tetris.x;
+        let tetris_y=tetris.y;
+        switch (direction) {
+            case 'bottom':
+                tetris_y=tetris_y+100;
+                break;
+            case 'left':
+                tetris_x=parseInt(tetris_x)-1;
+                break;
+            case 'right':
+                tetris_x=parseInt(tetris_x)+1;
+                break;
+            default:
+                tetris_y=tetris_y+100;
+                break;
         }
+        let c=baseTetris(tetris_x,parseInt(tetris_y/100),tetris.rotate1Index,tetris.rotate2Index);
         let boo=false;
         for(let i=0;i<4;i++){
-            if(!data[(k[i][1])]||data[(k[i][1])][c[i][0]]>0){
+            if(!data[(c[i][1])]){
+                break
+            }
+            if(typeof data[(c[i][1])][c[i][0]] == "undefined" || data[(c[i][1])][c[i][0]]>0){
                 console.log(data)
                 break
             }
@@ -229,7 +243,7 @@
         for(let i =0;i<4;i++){
             let y=d[i][1];
             let x=d[i][0];
-            if(data[y][x]!=0){
+            if(typeof data[y][x] == "undefined" || data[y][x]!=0){
                 console.log('无法旋转');
                 return false;
             }
@@ -239,7 +253,6 @@
     }
     //渲染方块
     function drawTetris(x,y,b) {
-        console.log(x,y,b)
         for(let i =0;i<b.length;i++){
             ctx.fillRect(b[i][0]*50+x*50-tetrisX*50, b[i][1]*50+y/100*50-tetrisY*50, tetrisWidth, tetrisHeight);
         }
@@ -252,6 +265,10 @@
         }
         if(isrotate(tetris,index)){
             canvas_paste();
+            if(tetris.rotate1Index == 0 && tetris.rotate2Index == 0 && tetris.x == 0){
+                tetris.x+=1
+                tetrisX=tetris.x
+            }
             tetris.rotate2Index=index;
             tetris.random=baseTetris(tetrisX,tetrisY,tetris.rotate1Index,tetris.rotate2Index);
             tetris.draw();
@@ -259,7 +276,7 @@
     }
     //结束
     function gameOver() {
-        console.log('结束>>>>')
+        alert('游戏结束')
     }
     //键盘事件
     document.onkeyup=function(e) {
@@ -272,7 +289,7 @@
             case 37:
                 console.log('左键');
                 canvas_paste();
-                if(tetris.x<width){
+                if(tetris.x<width && getNextState(tetris,'left')){
                     tetris.x=tetris.x-1;
                 }
                 if(tetris.x<=0){
@@ -280,16 +297,10 @@
                 }
                 tetris.draw();
                 break;
-            case 38:
-                console.log('上键');
-                canvas_paste();
-                if(tetris.y>0) tetris.y-=1;
-                tetris.draw();
-                break;
             case 39:
                 console.log('右键');
                 canvas_paste();
-                if(tetris.x>=0){
+                if(tetris.x>=0  && getNextState(tetris,'right')){
                     tetris.x=tetris.x+1;
                 }
                 if(((tetris.x)+tetrisWidth)>=width){
@@ -319,7 +330,6 @@
                     ctx.restore();
                     tetris.draw();
                 }
-
                 break;
         }
     };
